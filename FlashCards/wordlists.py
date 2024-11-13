@@ -1,31 +1,3 @@
-# Korean basics
-# korean_basics = {
-#     "안녕하세요": "Hello",
-#     "감사합니다": "Thank you", 
-#     "사랑해요": "I love you",
-#     "미안해요": "I'm sorry",
-#     "네": "Yes",
-#     "아니요": "No"
-# }
-
-# # Numbers
-# korean_numbers = {
-#     "하나": "One",
-#     "둘": "Two", 
-#     "셋": "Three",
-#     "넷": "Four",
-#     "다섯": "Five"
-# }
-
-# # Food words
-# korean_food = {
-#     "밥": "Rice",
-#     "김치": "Kimchi",
-#     "물": "Water",
-#     "음식": "Food",
-#     "맛있어요": "Delicious"
-# }
-
 korean_Vocab_6a = {
     "Nouns": {
         "날씨": "weather",
@@ -37,13 +9,13 @@ korean_Vocab_6a = {
         "자전거": "bicycle",
         "지하철": "subway",
         "차": "car",
+        "트럭": "truck",
         "하루": "(one) day",
         "한인타운": "Korea town"
     },
     "Verbs": {
-        "걷다(걸려요)": "to take [time]",
-        "살다(살아요)": "to live",
-        "쓰다": "to write"
+        "걸리다(걸려요)": "to take [time]",
+        "살다(살아요)": "to live"
     },
     "Adjectives": {
         "가깝다(가까워요)": "to be close, near",
@@ -66,8 +38,5 @@ korean_Vocab_6a = {
         "보통": "usually",
         "얼마나/얼마": "how long/how much",
         "조금": "a little"
-    },
-    "Counter": {
-        "시간": "hour (duration)"
     }
 }

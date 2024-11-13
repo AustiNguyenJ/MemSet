@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk,messagebox
 
 class FlashcardUI:
     def __init__(self, controller):
@@ -7,7 +7,8 @@ class FlashcardUI:
         self.window = Tk()
         self.setup_window()
         self.setup_styles()
-        self.showing_list = False  # Explicitly set default view
+        self.showing_list = False
+        self.showing_quiz = False  # New flag for quiz mode
         self.create_widgets()
         self.bind_shortcuts()
 
@@ -20,6 +21,18 @@ class FlashcardUI:
         self.style = ttk.Style()
         self.style.theme_use('default')
         
+        self.style.configure(
+            'Quiz.TButton',
+            font=('Helvetica', 11),
+            padding=8,
+            background='#9c27b0',
+            borderwidth=0,
+            relief='flat'
+        )
+        self.style.map('Quiz.TButton',
+            background=[('active', '#ab47bc')]
+        )
+
         # Modern button style with subtle hover effect
         self.style.configure(
             'Modern.TButton',
@@ -107,6 +120,7 @@ class FlashcardUI:
         )
 
     def create_widgets(self):
+        # Main container
         self.container = Frame(self.window, bg="#ffffff")
         self.container.pack(expand=True, fill='both', padx=30, pady=20)
         
@@ -128,21 +142,39 @@ class FlashcardUI:
         )
         title_label.pack(side='left', pady=(0, 10))
         
-        # View toggle button
+        # View buttons frame
+        view_buttons_frame = Frame(title_toggle_frame, bg="#ffffff")
+        view_buttons_frame.pack(side='right', pady=(0, 10))
+        
+        # Quiz mode button
+        self.quiz_button = ttk.Button(
+            view_buttons_frame,
+            text="✍ Quiz Mode",
+            command=self.toggle_quiz,
+            style='Quiz.TButton'
+        )
+        self.quiz_button.pack(side='left', padx=5)
+        
+        # Study list button
         self.toggle_button = ttk.Button(
-            title_toggle_frame,
+            view_buttons_frame,
             text="📋 Study List",
             command=self.toggle_view,
             style='Toggle.TButton'
         )
-        self.toggle_button.pack(side='right', pady=(0, 10))
+        self.toggle_button.pack(side='left')
         
-        # Create both views
+        # Content frame to hold all views
+        self.content_frame = Frame(self.container, bg="#ffffff")
+        self.content_frame.pack(fill='both', expand=True)
+        
+        # Create all views
         self.create_flashcard_view()
         self.create_list_view()
+        self.create_quiz_view()
         
-        # Show flashcard view by default
-        self.flashcard_frame.pack(fill='both', expand=True)
+        # Initially show only flashcard view
+        self.flashcard_frame.pack(in_=self.content_frame, fill='both', expand=True)
 
     def create_flashcard_view(self):
         self.flashcard_frame = Frame(self.container, bg="#ffffff")
@@ -368,16 +400,22 @@ class FlashcardUI:
             Frame(current_column, height=10, bg="#ffffff").pack()
 
     def toggle_view(self):
+        self.flashcard_frame.pack_forget()
+        self.list_frame.pack_forget()
+        self.quiz_frame.pack_forget()
+        
         self.showing_list = not self.showing_list
+        self.showing_quiz = False
+        
         if self.showing_list:
-            self.flashcard_frame.pack_forget()
-            self.list_frame.pack(fill='both', expand=True)
+            self.list_frame.pack(in_=self.content_frame, fill='both', expand=True)
             self.toggle_button.configure(text="🎴 Flashcards")
+            self.quiz_button.configure(state='disabled')
             self.update_list_view()
         else:
-            self.list_frame.pack_forget()
-            self.flashcard_frame.pack(fill='both', expand=True)
+            self.flashcard_frame.pack(in_=self.content_frame, fill='both', expand=True)
             self.toggle_button.configure(text="📋 Study List")
+            self.quiz_button.configure(state='normal')
 
     def bind_shortcuts(self):
         self.window.bind('<space>', lambda e: self.controller.flip_card())
@@ -403,6 +441,159 @@ class FlashcardUI:
                 label=category, 
                 command=lambda c=category: self.controller.change_category(c)
             )
+
+    def create_quiz_view(self):
+        self.quiz_frame = Frame(self.container, bg="#ffffff")
+        
+        # Set selection frame
+        set_frame = Frame(self.quiz_frame, bg="#ffffff")
+        set_frame.pack(fill='x', pady=(0, 20))
+        
+        self.quiz_set_var = StringVar(value=self.controller.current_set)
+        self.quiz_set_menu = ttk.OptionMenu(
+            set_frame, 
+            self.quiz_set_var,
+            self.controller.current_set,
+            *self.controller.word_lists.keys(),
+            command=self.controller.change_set,
+            style='Modern.TMenubutton'
+        )
+        self.quiz_set_menu.pack(side='left', padx=5, fill='x', expand=True)
+        
+        self.quiz_category_var = StringVar(value=self.controller.current_category)
+        self.quiz_category_menu = ttk.OptionMenu(
+            set_frame, 
+            self.quiz_category_var,
+            self.controller.current_category,
+            *self.controller.word_lists[self.controller.current_set].keys(),
+            command=self.controller.change_category,
+            style='Modern.TMenubutton'
+        )
+        self.quiz_category_menu.pack(side='right', padx=5, fill='x', expand=True)
+        
+        # Question frame
+        self.question_frame = Frame(self.quiz_frame, bg="white", pady=20)
+        self.question_frame.pack(fill='x')
+        
+        self.question_label = Label(
+            self.question_frame,
+            text="",
+            font=("Helvetica", 24),
+            bg="white",
+            fg="#333333",
+            wraplength=800
+        )
+        self.question_label.pack()
+        
+        # Answer frame
+        answer_frame = Frame(self.quiz_frame, bg="#ffffff")
+        answer_frame.pack(fill='x', pady=20)
+        
+        self.answer_entry = ttk.Entry(
+            answer_frame,
+            font=("Helvetica", 18),
+            width=40
+        )
+        self.answer_entry.pack(pady=10)
+        
+        # Feedback frame
+        self.feedback_frame = Frame(self.quiz_frame, bg="#ffffff")
+        self.feedback_frame.pack(fill='x', pady=(0, 20))
+        
+        self.feedback_label = Label(
+            self.feedback_frame,
+            text="",
+            font=("Helvetica", 14),
+            bg="#ffffff",
+            wraplength=800
+        )
+        self.feedback_label.pack()
+        
+        # Button frame
+        button_frame = Frame(self.quiz_frame, bg="#ffffff")
+        button_frame.pack(fill='x', pady=10)
+        
+        self.check_button = ttk.Button(
+            button_frame,
+            text="Check Answer",
+            command=self.controller.check_answer,
+            style='Modern.TButton'
+        )
+        self.check_button.pack(side='left', expand=True, padx=5)
+        
+        self.reveal_button = ttk.Button(
+            button_frame,
+            text="Reveal Answer",
+            command=self.controller.reveal_answer,
+            style='Toggle.TButton'
+        )
+        self.reveal_button.pack(side='left', expand=True, padx=5)
+        
+        self.next_quiz_button = ttk.Button(
+            button_frame,
+            text="Next Question",
+            command=self.controller.next_quiz,
+            style='Modern.TButton'
+        )
+        self.next_quiz_button.pack(side='right', expand=True, padx=5)
+
+        self.reset_button = ttk.Button(
+            button_frame,
+            text="Reset Progress",
+            command=self.controller.reset_quiz,
+            style='Toggle.TButton'
+        )
+        self.reset_button.pack(side='right', expand=True, padx=5)
+        
+        # Bind Enter key to check answer
+        self.answer_entry.bind('<Return>', lambda e: self.controller.check_answer())
+
+    def show_feedback(self, is_correct, user_answer="", correct_answer="", score_text=None):
+        if is_correct:
+            self.feedback_label.config(
+                text=score_text if score_text else "Correct! ✨",
+                fg="#4caf50"
+            )
+        else:
+            self.feedback_label.config(
+                text=f"Incorrect\nYour answer: {user_answer}\nCorrect answer: {correct_answer}",
+                fg="#f44336"
+            )
+
+    def clear_feedback(self):
+        self.feedback_label.config(text="")
+
+    def show_answer(self, answer):
+        self.feedback_label.config(
+            text=f"The correct answer is:\n{answer}",
+            fg="#4a90e2"
+        )
+
+    def update_quiz(self, question, is_korean):
+        self.question_label.config(text=question)
+        self.answer_entry.delete(0, END)
+        self.answer_entry.focus()
+
+    def toggle_quiz(self):
+        # Hide all frames first
+        self.flashcard_frame.pack_forget()
+        self.list_frame.pack_forget()
+        self.quiz_frame.pack_forget()
+        
+        self.showing_quiz = not self.showing_quiz
+        self.showing_list = False
+        
+        if self.showing_quiz:
+            self.quiz_frame.pack(in_=self.content_frame, fill='both', expand=True)
+            self.quiz_button.configure(text="🎴 Flashcards")
+            self.toggle_button.configure(state='disabled')
+            self.controller.reset_quiz()  # Reset quiz when starting new session
+        else:
+            self.flashcard_frame.pack(in_=self.content_frame, fill='both', expand=True)
+            self.quiz_button.configure(text="✍ Quiz Mode")
+            self.toggle_button.configure(state='normal')
+
+
 
     def run(self):
         self.window.mainloop()

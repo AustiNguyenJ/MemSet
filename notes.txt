@@ -1,0 +1,8 @@
+Possible new functions
+- Show quiz score
+- Show quiz progress
+
+- Swap between term and definitions (toggle)
+
+- Better algo for selecting words
+    - Prioritize words with lower scores

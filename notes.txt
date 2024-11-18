@@ -6,3 +6,7 @@ Possible new functions
 
 - Better algo for selecting words
     - Prioritize words with lower scores
+
+- Show word progress in list view
+    - Show progress bar for each category
+    - Show progress bar for each word
